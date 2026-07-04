@@ -505,57 +505,57 @@ export const PACKAGE_BOOKING_OPTIONS = [
 
 export const SERVICE_CARDS = [
   {
-    icon: '🩺',
+    icon: 'checkup',
     title: 'Preventive Health Checkup',
     text: 'Structured screenings for everyday health tracking and early action.',
   },
   {
-    icon: '🧪',
+    icon: 'lab',
     title: 'Lab Tests',
     text: 'Focused blood and diagnostic tests with simple booking and quick reporting.',
   },
   {
-    icon: '💓',
+    icon: 'heart',
     title: 'Heart Health Checkup',
     text: 'Cardiac-focused screening built around lifestyle and risk markers.',
   },
   {
-    icon: '🧬',
+    icon: 'diabetes',
     title: 'Diabetes Checkup',
     text: 'Glucose and metabolic reviews for better long-term monitoring.',
   },
   {
-    icon: '🌿',
+    icon: 'women',
     title: 'Women\'s Health Checkup',
     text: 'Health checks shaped around iron, hormone, and general wellness needs.',
   },
   {
-    icon: '🧓',
+    icon: 'senior',
     title: 'Senior Citizen Checkup',
     text: 'Thoughtful packages for older adults with gentler sample workflows.',
   },
   {
-    icon: '👨‍👩‍👧‍👦',
+    icon: 'family',
     title: 'Family Health Checkup',
     text: 'One booking for the household with easier coordination and shared support.',
   },
   {
-    icon: '🏢',
+    icon: 'corporate',
     title: 'Corporate Health Checkup',
     text: 'Bulk and onsite health programs for teams, offices, and leadership groups.',
   },
   {
-    icon: '🏠',
+    icon: 'home',
     title: 'Home Sample Collection',
     text: 'Sample pickup that reduces friction for busy families and senior patients.',
   },
   {
-    icon: '👩‍⚕️',
+    icon: 'doctor',
     title: 'Doctor Consultation',
     text: 'Optional clinician review to help users interpret next steps clearly.',
   },
   {
-    icon: '📋',
+    icon: 'report',
     title: 'Report Review',
     text: 'Simple report follow-up for users who need a clearer explanation.',
   },

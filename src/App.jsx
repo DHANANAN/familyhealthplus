@@ -6,7 +6,6 @@ import {
   FAQS,
   HERO_METRICS,
   HOW_IT_WORKS,
-  NAV_LINKS,
   PACKAGE_BOOKING_OPTIONS,
   PACKAGE_GROUPS,
   PACKAGE_TABS,
@@ -24,10 +23,20 @@ import {
 
 const DEFAULT_TAB = PACKAGE_TABS[0].key
 
+const SLIDES = [
+  { id: 'home', label: 'Home', icon: '🏠' },
+  { id: 'packages', label: 'Health Packages', icon: '📦' },
+  { id: 'services', label: 'Lab Services', icon: '🧪' },
+  { id: 'why-us', label: 'Why Choose Us', icon: '✨' },
+  { id: 'specialized', label: 'Care Solutions', icon: '🩺' },
+  { id: 'reviews-faq', label: 'Reviews & FAQs', icon: '💬' },
+  { id: 'contact', label: 'Book & Contact', icon: '📅' },
+]
+
 function App() {
   const [isReady, setIsReady] = useState(false)
-  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
-  const [isPackagesOpen, setIsPackagesOpen] = useState(false)
+  const [currentSlide, setCurrentSlide] = useState(0)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [activeTab, setActiveTab] = useState(DEFAULT_TAB)
   const [drawerPackage, setDrawerPackage] = useState(PACKAGE_GROUPS[DEFAULT_TAB][0])
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
@@ -39,7 +48,7 @@ function App() {
 
   useEffect(() => {
     const readyTimer = window.setTimeout(() => setIsReady(true), 650)
-    const offerTimer = window.setTimeout(() => setIsOfferOpen(false), 12000)
+    const offerTimer = window.setTimeout(() => setIsOfferOpen(false), 15000)
 
     return () => {
       window.clearTimeout(readyTimer)
@@ -55,25 +64,33 @@ function App() {
     return () => window.clearInterval(autoplay)
   }, [])
 
+  // Listen to keyboard left/right arrow keys for sliding presentation
   useEffect(() => {
-    const revealed = document.querySelectorAll('[data-reveal]')
+    const handleKeyDown = (event) => {
+      // Avoid sliding if user is typing in forms/inputs
+      if (document.activeElement.tagName === 'INPUT' || 
+          document.activeElement.tagName === 'TEXTAREA' || 
+          document.activeElement.tagName === 'SELECT') {
+        return
+      }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('is-visible')
-            observer.unobserve(entry.target)
-          }
-        })
-      },
-      { threshold: 0.16 },
-    )
+      if (event.key === 'ArrowRight') {
+        setCurrentSlide((curr) => Math.min(SLIDES.length - 1, curr + 1))
+      } else if (event.key === 'ArrowLeft') {
+        setCurrentSlide((curr) => Math.max(0, curr - 1))
+      }
+    }
 
-    revealed.forEach((element) => observer.observe(element))
-
-    return () => observer.disconnect()
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
+
+  useEffect(() => {
+    document.body.classList.toggle('modal-open', isDrawerOpen || isOfferOpen)
+    return () => {
+      document.body.classList.remove('modal-open')
+    }
+  }, [isDrawerOpen, isOfferOpen])
 
   useEffect(() => {
     const nextPackage = PACKAGE_GROUPS[activeTab]?.[0]
@@ -83,25 +100,58 @@ function App() {
     }
   }, [activeTab])
 
-  useEffect(() => {
-    document.body.classList.toggle('modal-open', isDrawerOpen || isOfferOpen)
+  // Navigate to slide and update specific package tabs if selected
+  const handleNav = (target, index) => {
+    setCurrentSlide(index)
+    setIsMobileMenuOpen(false)
 
-    return () => {
-      document.body.classList.remove('modal-open')
+    // Scroll the selected slide back to top
+    const element = document.querySelectorAll('.slide-panel')[index]
+    if (element) {
+      element.scrollTo({ top: 0, behavior: 'smooth' })
     }
-  }, [isDrawerOpen, isOfferOpen])
-
-  const closeNav = () => {
-    setIsMobileNavOpen(false)
-    setIsPackagesOpen(false)
   }
 
-  const scrollToSection = (id) => {
-    const target = document.getElementById(id)
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const navigateToSection = (key) => {
+    // Check if key is a package key
+    const isPackageKey = PACKAGE_TABS.some((tab) => tab.key === key)
+    if (isPackageKey) {
+      setActiveTab(key)
+      handleNav('packages', 1)
+      return
     }
-    closeNav()
+
+    switch (key) {
+      case 'home':
+        handleNav('home', 0)
+        break
+      case 'packages':
+        handleNav('packages', 1)
+        break
+      case 'services':
+        handleNav('services', 2)
+        break
+      case 'about':
+        handleNav('why-us', 3)
+        break
+      case 'home-collection':
+      case 'corporate':
+        handleNav('specialized', 4)
+        if (key === 'corporate') {
+          setActiveTab('corporate')
+        }
+        break
+      case 'testimonials':
+      case 'faq':
+        handleNav('reviews-faq', 5)
+        break
+      case 'contact':
+      case 'book-now':
+        handleNav('contact', 6)
+        break
+      default:
+        handleNav('home', 0)
+    }
   }
 
   const openPackage = (pkg) => {
@@ -111,7 +161,7 @@ function App() {
 
   const bookPackage = (pkg) => {
     setFocusPackage(pkg.name)
-    scrollToSection('book-now')
+    navigateToSection('contact')
   }
 
   return (
@@ -121,581 +171,584 @@ function App() {
         Skip to content
       </a>
 
-      <header className="site-header" id="top">
-        <div className="announcement-bar">
-          <p className="announcement-copy">Book preventive health checkups with home sample collection.</p>
-          <div className="announcement-links">
-            {QUICK_LINKS.map((link) => (
-              <a key={link.label} href={link.href} onClick={closeNav}>
-                {link.label}
-              </a>
-            ))}
-            <a href={CONTACT.phoneHref}>{CONTACT.phoneDisplay}</a>
-            <a href={CONTACT.emailHref}>{CONTACT.email}</a>
+      {/* Desktop Persistent Left Sidebar */}
+      <aside className="desktop-sidebar" aria-label="Main Navigation">
+        <div className="sidebar-top">
+          <div className="sidebar-brand">
+            <span className="brand-mark">FH+</span>
+            <div className="brand-copy">
+              <strong>Family Health Plus</strong>
+              <span>Preventive health care</span>
+            </div>
           </div>
+
+          <nav className="sidebar-nav">
+            {SLIDES.map((slide, idx) => (
+              <button
+                key={slide.id}
+                type="button"
+                className={`sidebar-link ${currentSlide === idx ? 'active' : ''}`}
+                onClick={() => handleNav(slide.id, idx)}
+              >
+                <span className="sidebar-link-icon">{slide.icon}</span>
+                <span>{slide.label}</span>
+              </button>
+            ))}
+          </nav>
         </div>
 
-        <div className="nav-shell">
-          <a className="brand" href="#home" onClick={closeNav}>
-            <span className="brand-mark">FH+</span>
-            <span className="brand-copy">
-              <strong>Family Health Plus</strong>
-              <span>Preventive health and lab care</span>
-            </span>
-          </a>
-
-          <button
-            className="nav-toggle"
-            type="button"
-            aria-expanded={isMobileNavOpen}
-            aria-controls="primary-nav"
-            aria-label="Toggle navigation menu"
-            onClick={() => setIsMobileNavOpen((open) => !open)}
-          >
-            <span />
-            <span />
-            <span />
+        <div className="sidebar-bottom">
+          <button type="button" className="sidebar-cta-btn" onClick={() => navigateToSection('contact')}>
+            Book Checkup Now
           </button>
+          
+          <div className="sidebar-contact-info">
+            <span>Call: <a href={CONTACT.phoneHref}>{CONTACT.phoneDisplay}</a></span>
+            <span>WhatsApp: <a href={CONTACT.whatsappHref} target="_blank" rel="noreferrer">Chat now</a></span>
+          </div>
+        </div>
+      </aside>
 
-          <nav className={`primary-nav ${isMobileNavOpen ? 'open' : ''}`} id="primary-nav">
-            <div className="nav-links">
-              {NAV_LINKS.slice(0, 2).map((link) => (
-                <a key={link.label} href={link.href} onClick={closeNav}>
-                  {link.label}
-                </a>
-              ))}
+      {/* Mobile Top Navigation Header */}
+      <header className="mobile-header">
+        <div className="mobile-brand">
+          <span className="brand-mark">FH+</span>
+          <strong>Family Health Plus</strong>
+        </div>
 
-              <div
-                className={`packages-menu ${isPackagesOpen ? 'open' : ''}`}
-                onMouseLeave={() => setIsPackagesOpen(false)}
-              >
-                <button
-                  type="button"
-                  className="menu-trigger"
-                  aria-expanded={isPackagesOpen}
-                  onClick={() => setIsPackagesOpen((open) => !open)}
-                >
-                  Health Packages
-                  <span aria-hidden="true">▾</span>
-                </button>
-                <div className="packages-menu-panel">
-                  {PACKAGE_TABS.map((tab) => (
-                    <button
-                      key={tab.key}
-                      type="button"
-                      className="menu-chip"
-                      onClick={() => {
-                        setActiveTab(tab.key)
-                        scrollToSection('packages')
-                      }}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    className="menu-cta"
-                    onClick={() => {
-                      scrollToSection('book-now')
-                      setIsPackagesOpen(false)
-                    }}
-                  >
+        <button
+          className={`mobile-menu-toggle ${isMobileMenuOpen ? 'open' : ''}`}
+          type="button"
+          aria-label="Toggle navigation drawer"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+      </header>
+
+      {/* Mobile Slide-out Menu Drawer */}
+      <div className={`mobile-nav-drawer ${isMobileMenuOpen ? 'open' : ''}`}>
+        <nav className="mobile-nav-links">
+          {SLIDES.map((slide, idx) => (
+            <button
+              key={slide.id}
+              type="button"
+              className={`sidebar-link ${currentSlide === idx ? 'active' : ''}`}
+              onClick={() => handleNav(slide.id, idx)}
+            >
+              <span className="sidebar-link-icon">{slide.icon}</span>
+              <span>{slide.label}</span>
+            </button>
+          ))}
+        </nav>
+
+        <button 
+          type="button" 
+          className="sidebar-cta-btn" 
+          style={{ marginTop: '2rem' }} 
+          onClick={() => navigateToSection('contact')}
+        >
+          Book Checkup Now
+        </button>
+      </div>
+
+      {/* Main Slide-based Presentation Deck */}
+      <main id="main-content" className="main-presentation-deck">
+        <div 
+          className="slides-track"
+          style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+        >
+          {/* SLIDE 0: HOME / HERO */}
+          <section className="slide-panel" id="slide-home">
+            <div className="hero-grid">
+              <div className="glass-container" style={{ margin: 0 }}>
+                <p className="eyebrow">Premium preventive healthcare</p>
+                <h1 className="gradient-headline">
+                  Book smarter health checkups for the whole family.
+                </h1>
+                <p className="hero-lead">
+                  Family Health Plus brings together preventive checkups, lab tests, doctor review, home sample collection,
+                  and corporate wellness into one clean, trusted booking experience.
+                </p>
+
+                <div className="hero-actions">
+                  <button type="button" className="primary-btn" onClick={() => navigateToSection('contact')}>
                     Book a Health Checkup
+                  </button>
+                  <button type="button" className="secondary-btn" onClick={() => navigateToSection('packages')}>
+                    View Packages
+                  </button>
+                </div>
+
+                <div className="trust-badges" aria-label="Trust badges">
+                  {TRUST_BADGES.map((badge) => (
+                    <span key={badge}>{badge}</span>
+                  ))}
+                </div>
+
+                <div className="hero-metrics">
+                  {HERO_METRICS.map((metric) => (
+                    <StatPill key={metric.label} metric={metric} visible={isReady && currentSlide === 0} />
+                  ))}
+                </div>
+
+                <ul className="hero-benefits">
+                  <li>Home sample collection for busy mornings</li>
+                  <li>Clear package comparison and easy booking flow</li>
+                  <li>Digital reports and optional report review support</li>
+                </ul>
+              </div>
+
+              <div className="hero-panel">
+                <div className="hero-art-card">
+                  <div className="hero-art-head">
+                    <span className="hero-art-badge">Fast booking</span>
+                    <span className="hero-art-badge alt">Trusted care</span>
+                  </div>
+                  <div className="hero-art-visual" aria-hidden="true">
+                    <div className="art-screen art-screen-large">
+                      <div className="screen-bar" />
+                      <div className="screen-lines">
+                        <span />
+                        <span />
+                        <span />
+                      </div>
+                    </div>
+                    <div className="art-card art-card-floating one">
+                      <strong>Home Sample</strong>
+                      <span>Flexible doorstep collection</span>
+                    </div>
+                    <div className="art-card art-card-floating two">
+                      <strong>Report Review</strong>
+                      <span>Guided explanation on request</span>
+                    </div>
+                    <div className="art-card art-card-chip">
+                      <span>Certified Labs</span>
+                      <span>Accurate Reports</span>
+                      <span>Expert Support</span>
+                    </div>
+                  </div>
+                </div>
+
+                <LeadForm
+                  id="book-now"
+                  title="Request a callback"
+                  subtitle="Tell us what you need and we will call you back with the best-fit package."
+                  submitLabel="Submit Request"
+                  defaultInterest={focusPackage}
+                  compact={false}
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* SLIDE 1: HEALTH PACKAGES */}
+          <section className="slide-panel" id="slide-packages">
+            <SectionHeading
+              eyebrow="Popular health packages"
+              title="Compare packages, then book the one that fits your family best."
+              text="The catalog below is organised to keep the decision simple: choose your life stage, compare the test counts, and open the details drawer before booking."
+              align="left"
+            />
+
+            <div className="tab-row" role="tablist" aria-label="Package categories">
+              {PACKAGE_TABS.map((tab) => (
+                <button
+                  key={tab.key}
+                  id={`tab-${tab.key}`}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === tab.key}
+                  className={`tab-chip ${activeTab === tab.key ? 'active' : ''}`}
+                  onClick={() => setActiveTab(tab.key)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="package-grid">
+              {isReady
+                ? currentPackages.map((pkg) => (
+                    <PackageCard
+                      key={pkg.slug}
+                      pkg={pkg}
+                      onKnowMore={() => openPackage(pkg)}
+                      onBookNow={() => bookPackage(pkg)}
+                    />
+                  ))
+                : Array.from({ length: 3 }).map((_, index) => (
+                    <article key={index} className="package-card skeleton-card" aria-hidden="true">
+                      <div className="skeleton-line short" />
+                      <div className="skeleton-line long" />
+                      <div className="skeleton-pills">
+                        <span />
+                        <span />
+                        <span />
+                      </div>
+                      <div className="skeleton-block" />
+                      <div className="skeleton-line medium" />
+                    </article>
+                  ))}
+            </div>
+          </section>
+
+          {/* SLIDE 2: LAB SERVICES */}
+          <section className="slide-panel" id="slide-services">
+            <SectionHeading
+              eyebrow="Health lab services"
+              title="Everything your preventive care journey needs, in one place."
+              text="Use this section to quickly explain the breadth of the offering, then guide users to the best package or support option."
+              align="left"
+            />
+
+            <div className="service-grid">
+              {SERVICE_CARDS.map((service) => (
+                <ServiceCard key={service.title} service={service} />
+              ))}
+            </div>
+          </section>
+
+          {/* SLIDE 3: WHY CHOOSE US & PROCESS */}
+          <section className="slide-panel" id="slide-why-us">
+            <div className="why-stats-layout">
+              <div className="glass-container" style={{ margin: 0 }}>
+                <SectionHeading
+                  eyebrow="Why choose Family Health Plus"
+                  title="Built for clarity, trust, and a calmer booking experience."
+                  text="This design keeps the healthcare message front and centre: fewer distractions, clearer comparison, and faster ways to take action."
+                  align="left"
+                />
+
+                <div className="why-points">
+                  {WHY_POINTS.map((point) => (
+                    <div key={point} className="why-point">
+                      <span className="why-dot" aria-hidden="true" />
+                      <span>{point}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="why-stats">
+                {WHY_US.map((stat) => (
+                  <CounterCard key={stat.label} stat={stat} visible={isReady && currentSlide === 3} />
+                ))}
+              </div>
+            </div>
+
+            <div style={{ marginTop: '3.5rem' }}>
+              <SectionHeading
+                eyebrow="How it works"
+                title="A four-step flow that removes friction from the first booking."
+                text="The same structure works for a callback lead form, a package booking flow, or a corporate quote request."
+                align="left"
+              />
+
+              <div className="process-grid">
+                {HOW_IT_WORKS.map((step) => (
+                  <ProcessCard key={step.step} step={step} />
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* SLIDE 4: SPECIALIZED CARE (HOME & CORPORATE) */}
+          <section className="slide-panel" id="slide-specialized">
+            <div className="split-deck-layout">
+              {/* Home Collection Section */}
+              <div className="feature-copy">
+                <SectionHeading
+                  eyebrow="Home sample collection"
+                  title="Book home collection without the back-and-forth."
+                  text="A dedicated home-collection section gives this site a direct conversion path for busy users, senior citizens, and families who prefer to stay at home."
+                  align="left"
+                />
+
+                <p className="feature-text">
+                  Choose a package, share your location, and we will confirm the sample visit window.
+                </p>
+
+                <div className="visual-card lab-visual" style={{ margin: '1.2rem 0' }}>
+                  <div className="lab-figure" aria-hidden="true">
+                    <div className="lab-circle large" />
+                    <div className="lab-circle small" />
+                    <div className="lab-vial" />
+                    <div className="lab-report">
+                      <span />
+                      <span />
+                      <span />
+                      <span />
+                    </div>
+                  </div>
+                  <div className="visual-caption">
+                    <strong>Sample collection and report flow</strong>
+                    <span>Clean, calm, and designed for a quick handoff</span>
+                  </div>
+                </div>
+
+                <div className="feature-actions">
+                  <button type="button" className="primary-btn" onClick={() => navigateToSection('contact')}>
+                    Book Home Collection
+                  </button>
+                  <a className="secondary-btn" href={CONTACT.whatsappHref} target="_blank" rel="noreferrer">
+                    WhatsApp Us
+                  </a>
+                </div>
+              </div>
+
+              {/* Corporate Checkup Section */}
+              <div className="feature-copy">
+                <SectionHeading
+                  eyebrow="Corporate health checkups"
+                  title="Wellness options for teams, offices, and corporate leadership."
+                  text="The corporate section is a dedicated B2B offering. It provides HR with a simple path to request customized group checkups."
+                  align="left"
+                />
+
+                <ul className="bullet-list">
+                  <li>Employee health screenings & checkups</li>
+                  <li>Bulk diagnostic and risk profiling packages</li>
+                  <li>Seamless onsite collection coordination</li>
+                  <li>Custom team health assessment profiles</li>
+                </ul>
+
+                <div className="visual-card corporate-visual" style={{ margin: '1.2rem 0' }}>
+                  <div className="corporate-stat">
+                    <strong>On-site readiness</strong>
+                    <span>Team-wide sample coordination and simple reporting</span>
+                  </div>
+                  <div className="corporate-grid">
+                    <span>HR brief</span>
+                    <span>Team slots</span>
+                    <span>Volume pricing</span>
+                    <span>Custom plans</span>
+                  </div>
+                  <div className="corporate-footer">Designed to support company wellness without friction</div>
+                </div>
+
+                <div className="feature-actions">
+                  <button type="button" className="primary-btn" onClick={() => navigateToSection('contact')}>
+                    Request Corporate Quote
+                  </button>
+                  <button type="button" className="secondary-btn" onClick={() => navigateToSection('corporate')}>
+                    View Corporate Packages
                   </button>
                 </div>
               </div>
-
-              {NAV_LINKS.slice(2).map((link) => (
-                <a key={link.label} href={link.href} onClick={closeNav}>
-                  {link.label}
-                </a>
-              ))}
             </div>
+          </section>
 
-            <div className="nav-actions">
-              <a className="text-link" href={CONTACT.whatsappHref} target="_blank" rel="noreferrer">
-                WhatsApp
-              </a>
-              <button type="button" className="primary-btn" onClick={() => scrollToSection('book-now')}>
-                Book Now
-              </button>
-            </div>
-          </nav>
-        </div>
-      </header>
+          {/* SLIDE 5: TESTIMONIALS & FAQ */}
+          <section className="slide-panel" id="slide-reviews-faq">
+            <div className="split-deck-layout">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                <SectionHeading
+                  eyebrow="Testimonials"
+                  title="What patients say about us."
+                  text="We focus on providing a calm, professional, and friction-free diagnostics experience."
+                  align="left"
+                />
 
-      <main id="main-content">
-        <section className="hero-section" id="home">
-          <div className="hero-background" aria-hidden="true">
-            <span className="orb orb-one" />
-            <span className="orb orb-two" />
-            <span className="orb orb-three" />
-          </div>
+                <div className="testimonial-slider">
+                  <div
+                    className="testimonial-track"
+                    style={{ transform: `translateX(-${testimonialIndex * 100}%)` }}
+                    aria-live="polite"
+                  >
+                    {TESTIMONIALS.map((testimonial) => (
+                      <article className="testimonial-card" key={testimonial.name}>
+                        <p className="testimonial-quote">“{testimonial.quote}”</p>
+                        <div className="testimonial-meta">
+                          <div>
+                            <strong>{testimonial.name}</strong>
+                            <span>{testimonial.location}</span>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
 
-          <div className="hero-grid">
-            <div className="hero-copy" data-reveal>
-              <p className="eyebrow">Premium preventive healthcare</p>
-              <h1>
-                Book smarter health checkups for the whole family.
-              </h1>
-              <p className="hero-lead">
-                Family Health Plus brings together preventive checkups, lab tests, doctor review, home sample collection,
-                and corporate wellness into one clean, trusted booking experience.
-              </p>
-
-              <div className="hero-actions">
-                <button type="button" className="primary-btn" onClick={() => scrollToSection('book-now')}>
-                  Book a Health Checkup
-                </button>
-                <button type="button" className="secondary-btn" onClick={() => scrollToSection('packages')}>
-                  View Packages
-                </button>
-              </div>
-
-              <div className="trust-badges" aria-label="Trust badges">
-                {TRUST_BADGES.map((badge) => (
-                  <span key={badge}>{badge}</span>
-                ))}
-              </div>
-
-              <div className="hero-metrics">
-                {HERO_METRICS.map((metric) => (
-                  <StatPill key={metric.label} metric={metric} visible={isReady} />
-                ))}
-              </div>
-
-              <ul className="hero-benefits">
-                <li>Home sample collection for busy mornings</li>
-                <li>Clear package comparison and easy booking flow</li>
-                <li>Digital reports and optional report review support</li>
-              </ul>
-            </div>
-
-            <div className="hero-panel" data-reveal>
-              <div className="hero-art-card">
-                <div className="hero-art-head">
-                  <span className="hero-art-badge">Fast booking</span>
-                  <span className="hero-art-badge alt">Trusted care</span>
-                </div>
-                <div className="hero-art-visual" aria-hidden="true">
-                  <div className="art-screen art-screen-large">
-                    <div className="screen-bar" />
-                    <div className="screen-lines">
-                      <span />
-                      <span />
-                      <span />
+                  <div className="slider-controls" style={{ padding: '0 2.2rem 1.5rem' }}>
+                    <button type="button" onClick={() => setTestimonialIndex((index) => (index - 1 + TESTIMONIALS.length) % TESTIMONIALS.length)}>
+                      Prev
+                    </button>
+                    <div className="slider-dots" aria-label="Testimonial slide controls">
+                      {TESTIMONIALS.map((testimonial, idx) => (
+                        <button
+                          key={testimonial.name}
+                          type="button"
+                          className={testimonialIndex === idx ? 'active' : ''}
+                          onClick={() => setTestimonialIndex(idx)}
+                          aria-label={`Show testimonial ${idx + 1}`}
+                        />
+                      ))}
                     </div>
-                  </div>
-                  <div className="art-card art-card-floating one">
-                    <strong>Home Sample</strong>
-                    <span>Flexible doorstep collection</span>
-                  </div>
-                  <div className="art-card art-card-floating two">
-                    <strong>Report Review</strong>
-                    <span>Guided explanation on request</span>
-                  </div>
-                  <div className="art-card art-card-chip">
-                    <span>Certified Labs</span>
-                    <span>Accurate Reports</span>
-                    <span>Expert Support</span>
+                    <button type="button" onClick={() => setTestimonialIndex((index) => (index + 1) % TESTIMONIALS.length)}>
+                      Next
+                    </button>
                   </div>
                 </div>
+
+                <div className="glass-container" style={{ margin: 0, padding: '1.8rem' }}>
+                  <SectionHeading
+                    eyebrow={BRAND_STORY.eyebrow}
+                    title={BRAND_STORY.title}
+                    text={BRAND_STORY.copy}
+                    align="left"
+                  />
+                  <div style={{ fontStyle: 'italic', borderLeft: '3px solid var(--teal)', paddingLeft: '1rem', marginTop: '1rem', color: 'var(--text-muted)' }}>
+                    "{BRAND_STORY.quote}" – <strong>{BRAND_STORY.author}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <SectionHeading
+                  eyebrow="Frequently asked questions"
+                  title="Have questions about booking or samples?"
+                  text="Check the common inquiries below, or submit the callback form for direct assistance."
+                  align="left"
+                />
+
+                <div className="faq-list">
+                  {FAQS.map((faq) => (
+                    <details key={faq.question} className="faq-item">
+                      <summary>{faq.question}</summary>
+                      <p>{faq.answer}</p>
+                    </details>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* SLIDE 6: CONTACT & BOOK NOW & FOOTER */}
+          <section className="slide-panel" id="slide-contact">
+            <SectionHeading
+              eyebrow="Contact & Booking"
+              title="Turn health intent into action. Request a callback now."
+              text="Send us your details, and our care team will get back to you shortly to coordinate your package and sample collections."
+              align="left"
+            />
+
+            <div className="contact-grid">
+              <div className="contact-card">
+                <h3>Talk to the team</h3>
+                <p>Use the channels below if you want a callback, a WhatsApp reply, or a quick report review guide.</p>
+                <ul>
+                  <li><span>Phone</span><a href={CONTACT.phoneHref}>{CONTACT.phoneDisplay}</a></li>
+                  <li><span>WhatsApp</span><a href={CONTACT.whatsappHref} target="_blank" rel="noreferrer">{CONTACT.whatsappDisplay}</a></li>
+                  <li><span>Email</span><a href={CONTACT.emailHref}>{CONTACT.email}</a></li>
+                  <li><span>Location</span><span>{CONTACT.location}</span></li>
+                </ul>
               </div>
 
               <LeadForm
-                id="book-now"
+                id="contact-booking"
                 title="Request a callback"
-                subtitle="Tell us what you need and we will call you back with the best-fit package."
-                submitLabel="Submit Request"
+                subtitle="Send your details and we will help you choose the best package."
+                submitLabel="Request Callback"
+                compact
                 defaultInterest={focusPackage}
-                compact={false}
               />
             </div>
-          </div>
-        </section>
 
-        <section className="packages-section section-block" id="packages">
-          <SectionHeading
-            eyebrow="Popular health packages"
-            title="Compare packages, then book the one that fits your family best."
-            text="The catalog below is organised to keep the decision simple: choose your life stage, compare the test counts, and open the details drawer before booking."
-          />
-
-          <div className="tab-row" role="tablist" aria-label="Package categories">
-            {PACKAGE_TABS.map((tab) => (
-              <button
-                key={tab.key}
-                id={`tab-${tab.key}`}
-                type="button"
-                role="tab"
-                aria-selected={activeTab === tab.key}
-                className={`tab-chip ${activeTab === tab.key ? 'active' : ''}`}
-                onClick={() => setActiveTab(tab.key)}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="package-grid">
-            {isReady
-              ? currentPackages.map((pkg) => (
-                  <PackageCard
-                    key={pkg.slug}
-                    pkg={pkg}
-                    onKnowMore={() => openPackage(pkg)}
-                    onBookNow={() => bookPackage(pkg)}
-                  />
-                ))
-              : Array.from({ length: 3 }).map((_, index) => (
-                  <article key={index} className="package-card skeleton-card" aria-hidden="true">
-                    <div className="skeleton-line short" />
-                    <div className="skeleton-line long" />
-                    <div className="skeleton-pills">
-                      <span />
-                      <span />
-                      <span />
-                    </div>
-                    <div className="skeleton-block" />
-                    <div className="skeleton-line medium" />
-                  </article>
-                ))}
-          </div>
-        </section>
-
-        <section className="services-section section-block" id="services">
-          <SectionHeading
-            eyebrow="Health lab services"
-            title="Everything your preventive care journey needs, in one place."
-            text="Use this section to quickly explain the breadth of the offering, then guide users to the best package or support option."
-          />
-
-          <div className="service-grid">
-            {SERVICE_CARDS.map((service) => (
-              <ServiceCard key={service.title} service={service} />
-            ))}
-          </div>
-        </section>
-
-        <section className="why-section section-block" id="about">
-          <div className="split-layout">
-            <div className="split-copy" data-reveal>
-              <SectionHeading
-                eyebrow="Why choose Family Health Plus"
-                title="Built for clarity, trust, and a calmer booking experience."
-                text="This design keeps the healthcare message front and centre: fewer distractions, clearer comparison, and faster ways to take action."
-                align="left"
-              />
-
-              <div className="why-points">
-                {WHY_POINTS.map((point) => (
-                  <div key={point} className="why-point">
-                    <span className="why-dot" aria-hidden="true" />
-                    <span>{point}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="why-stats" data-reveal>
-              {WHY_US.map((stat) => (
-                <CounterCard key={stat.label} stat={stat} visible={isReady} />
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="process-section section-block">
-          <SectionHeading
-            eyebrow="How it works"
-            title="A four-step flow that removes friction from the first booking."
-            text="The same structure works for a callback lead form, a package booking flow, or a corporate quote request."
-          />
-
-          <div className="process-grid">
-            {HOW_IT_WORKS.map((step) => (
-              <ProcessCard key={step.step} step={step} />
-            ))}
-          </div>
-        </section>
-
-        <section className="feature-band section-block" id="home-collection">
-          <div className="feature-copy" data-reveal>
-            <SectionHeading
-              eyebrow="Home sample collection"
-              title="Book home collection without the back-and-forth."
-              text="A dedicated home-collection section gives this site a direct conversion path for busy users, senior citizens, and families who prefer to stay at home."
-              align="left"
-            />
-
-            <p className="feature-text">
-              Keep the promise simple: choose a package, share your location, and we will confirm the sample visit window.
-            </p>
-
-            <div className="feature-actions">
-              <button type="button" className="primary-btn" onClick={() => scrollToSection('book-now')}>
-                Book Home Sample Collection
-              </button>
-              <a className="secondary-btn link-btn" href={CONTACT.whatsappHref} target="_blank" rel="noreferrer">
-                WhatsApp Us
-              </a>
-            </div>
-          </div>
-
-          <div className="feature-visual" data-reveal>
-            <div className="visual-card lab-visual">
-              <div className="lab-figure" aria-hidden="true">
-                <div className="lab-circle large" />
-                <div className="lab-circle small" />
-                <div className="lab-vial" />
-                <div className="lab-report">
-                  <span />
-                  <span />
-                  <span />
-                  <span />
+            {/* Injected Footer at the bottom of the last slide */}
+            <footer className="site-footer">
+              <div className="footer-brand">
+                <span className="brand-mark" style={{ width: '44px', height: '44px', borderRadius: '12px', fontSize: '0.95rem' }}>FH+</span>
+                <div>
+                  <strong>Family Health Plus</strong>
+                  <p>Modern preventive healthcare, lab tests, home sample collection, and corporate screening.</p>
                 </div>
               </div>
-              <div className="visual-caption">
-                <strong>Sample collection and report flow</strong>
-                <span>Clean, calm, and designed for a quick handoff</span>
-              </div>
-            </div>
-          </div>
-        </section>
 
-        <section className="story-section section-block" id="story">
-          <div className="story-layout">
-            <div className="story-copy" data-reveal>
-              <SectionHeading
-                eyebrow={BRAND_STORY.eyebrow}
-                title={BRAND_STORY.title}
-                text={BRAND_STORY.copy}
-                align="left"
-              />
-
-              <div className="story-quote">
-                <span className="story-quote-mark">“</span>
-                <p>{BRAND_STORY.quote}</p>
-                <strong>{BRAND_STORY.author}</strong>
-              </div>
-
-              <div className="story-chips">
-                <span>Family-first tone</span>
-                <span>Soft premium visuals</span>
-                <span>Calm healthcare flow</span>
-              </div>
-            </div>
-
-            <div className="story-gallery" data-reveal>
-              <figure className="story-card large">
-                <img src={ILLUSTRATIONS.family} alt="Illustrated family wellness scene" />
-                <figcaption>Family wellness and yearly checkups</figcaption>
-              </figure>
-              <figure className="story-card">
-                <img src={ILLUSTRATIONS.lab} alt="Illustrated lab and report scene" />
-                <figcaption>Lab clarity with gentle reporting</figcaption>
-              </figure>
-              <figure className="story-card">
-                <img src={ILLUSTRATIONS.doctor} alt="Illustrated doctor consultation scene" />
-                <figcaption>Doctor guidance when users need it</figcaption>
-              </figure>
-              <figure className="story-card accent">
-                <img src={ILLUSTRATIONS.heart} alt="Illustrated heart health scene" />
-                <figcaption>Heart health with a softer visual tone</figcaption>
-              </figure>
-            </div>
-          </div>
-        </section>
-
-        <section className="feature-band reverse section-block" id="corporate">
-          <div className="feature-copy" data-reveal>
-            <SectionHeading
-              eyebrow="Corporate health checkups"
-              title="A premium wellness option for teams, offices, and leadership groups."
-              text="The corporate section should read as a serious B2B offer, not a generic package page. Give HR a simple route to request a tailored quote."
-              align="left"
-            />
-
-            <ul className="bullet-list">
-              <li>Employee wellness packages</li>
-              <li>Bulk health checkups</li>
-              <li>On-site sample collection</li>
-              <li>Custom corporate plans</li>
-            </ul>
-
-            <div className="feature-actions">
-              <button type="button" className="primary-btn" onClick={() => scrollToSection('book-now')}>
-                Request Corporate Quote
-              </button>
-              <button type="button" className="secondary-btn" onClick={() => setActiveTab('corporate')}>
-                View Corporate Packages
-              </button>
-            </div>
-          </div>
-
-          <div className="feature-visual" data-reveal>
-            <div className="visual-card corporate-visual">
-              <div className="corporate-stat">
-                <strong>On-site readiness</strong>
-                <span>Team-wide sample coordination and simple reporting</span>
-              </div>
-              <div className="corporate-grid">
-                <span>HR brief</span>
-                <span>Team slots</span>
-                <span>Bulk pricing</span>
-                <span>Custom plans</span>
-              </div>
-              <div className="corporate-footer">Designed to support company wellness without friction</div>
-            </div>
-          </div>
-        </section>
-
-        <section className="testimonial-section section-block" id="testimonials">
-          <SectionHeading
-            eyebrow="Testimonials"
-            title="Patient feedback should feel reassuring, specific, and believable."
-            text="These are intentionally placeholder testimonials. Replace them with real approved quotes before launch."
-          />
-
-          <div className="testimonial-slider" data-reveal>
-            <div
-              className="testimonial-track"
-              style={{ transform: `translateX(-${testimonialIndex * 100}%)` }}
-              aria-live="polite"
-            >
-              {TESTIMONIALS.map((testimonial) => (
-                <article className="testimonial-card" key={testimonial.name}>
-                  <p className="testimonial-quote">“{testimonial.quote}”</p>
-                  <div className="testimonial-meta">
-                    <div>
-                      <strong>{testimonial.name}</strong>
-                      <span>{testimonial.location}</span>
-                    </div>
-                    <small>{testimonial.note}</small>
+              <div className="footer-columns">
+                {FOOTER_COLUMNS.map((column) => (
+                  <div className="footer-column" key={column.title}>
+                    <h3>{column.title}</h3>
+                    {column.links.map((link) => (
+                      <a key={link.label} href={link.href} onClick={(e) => {
+                        e.preventDefault();
+                        const rawKey = link.href.replace('#tab-', '').replace('#', '');
+                        navigateToSection(rawKey);
+                      }}>
+                        {link.label}
+                      </a>
+                    ))}
                   </div>
-                </article>
-              ))}
-            </div>
-
-            <div className="slider-controls">
-              <button type="button" onClick={() => setTestimonialIndex((index) => (index - 1 + TESTIMONIALS.length) % TESTIMONIALS.length)}>
-                Prev
-              </button>
-              <div className="slider-dots" aria-label="Testimonial slide controls">
-                {TESTIMONIALS.map((testimonial, index) => (
-                  <button
-                    key={testimonial.name}
-                    type="button"
-                    className={testimonialIndex === index ? 'active' : ''}
-                    onClick={() => setTestimonialIndex(index)}
-                    aria-label={`Show testimonial ${index + 1}`}
-                  />
                 ))}
+
+                <div className="footer-column">
+                  <h3>Contact</h3>
+                  <a href={CONTACT.phoneHref}>{CONTACT.phoneDisplay}</a>
+                  <a href={CONTACT.whatsappHref} target="_blank" rel="noreferrer">{CONTACT.whatsappDisplay}</a>
+                  <a href={CONTACT.emailHref}>{CONTACT.email}</a>
+                  <span>{CONTACT.address}</span>
+
+                  <div className="social-links" aria-label="Social media links">
+                    {SOCIAL_LINKS.map((social) => (
+                      <a key={social.label} href={social.href}>
+                        {social.label}
+                      </a>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <button type="button" onClick={() => setTestimonialIndex((index) => (index + 1) % TESTIMONIALS.length)}>
-                Next
-              </button>
-            </div>
-          </div>
-        </section>
 
-        <section className="faq-section section-block" id="faq">
-          <SectionHeading
-            eyebrow="Frequently asked questions"
-            title="Handle the most common booking objections before they reach support."
-            text="An accessible accordion keeps the page compact while still addressing the details people care about before they convert."
-          />
-
-          <div className="faq-list" data-reveal>
-            {FAQS.map((faq) => (
-              <details key={faq.question} className="faq-item">
-                <summary>{faq.question}</summary>
-                <p>{faq.answer}</p>
-              </details>
-            ))}
-          </div>
-        </section>
-
-        <section className="contact-section section-block" id="contact">
-          <SectionHeading
-            eyebrow="Contact and booking"
-            title="Turn visitors into leads with one simple, visible action."
-            text="The final section combines the booking form, the contact channels, and trust details so users do not have to hunt for the next step."
-          />
-
-          <div className="contact-grid">
-            <div className="contact-card" data-reveal>
-              <h3>Talk to the team</h3>
-              <p>Use the channels below if you want a callback, a WhatsApp reply, or a quick report review guide.</p>
-              <ul>
-                <li><span>Phone</span><a href={CONTACT.phoneHref}>{CONTACT.phoneDisplay}</a></li>
-                <li><span>WhatsApp</span><a href={CONTACT.whatsappHref}>{CONTACT.whatsappDisplay}</a></li>
-                <li><span>Email</span><a href={CONTACT.emailHref}>{CONTACT.email}</a></li>
-                <li><span>Location</span><span>{CONTACT.location}</span></li>
-              </ul>
-            </div>
-
-            <LeadForm
-              id="contact-booking"
-              title="Request a callback"
-              subtitle="Send your details and we will help you choose the best package."
-              submitLabel="Request Callback"
-              compact
-              defaultInterest={focusPackage}
-            />
-          </div>
-        </section>
+              <div className="footer-bottom">
+                <p>Copyright {new Date().getFullYear()} Family Health Plus. All rights reserved.</p>
+                <div className="footer-legal">
+                  <a href="#privacy">Privacy</a>
+                  <a href="#terms">Terms</a>
+                  <a href="#refund">Refunds</a>
+                </div>
+              </div>
+            </footer>
+          </section>
+        </div>
       </main>
 
-      <footer className="site-footer">
-        <div className="footer-brand" data-reveal>
-          <div className="brand-mark large">FH+</div>
-          <div>
-            <strong>Family Health Plus</strong>
-            <p>Modern preventive healthcare, lab tests, home sample collection, and corporate screening.</p>
-          </div>
-        </div>
+      {/* Floating Presentation Navigation Controls (desktop and mobile overlay) */}
+      <div className="deck-navigation-overlay">
+        <button
+          type="button"
+          className="deck-arrow-btn"
+          aria-label="Previous Slide"
+          disabled={currentSlide === 0}
+          onClick={() => setCurrentSlide((curr) => Math.max(0, curr - 1))}
+        >
+          ←
+        </button>
 
-        <div className="footer-columns">
-          {FOOTER_COLUMNS.map((column) => (
-            <div className="footer-column" key={column.title}>
-              <h3>{column.title}</h3>
-              {column.links.map((link) => (
-                <a key={link.label} href={link.href}>
-                  {link.label}
-                </a>
-              ))}
-            </div>
+        <div className="deck-indicator-dots" aria-label="Slide Deck progress">
+          {SLIDES.map((slide, idx) => (
+            <button
+              key={slide.id}
+              type="button"
+              className={`deck-dot ${currentSlide === idx ? 'active' : ''}`}
+              title={`Go to ${slide.label}`}
+              onClick={() => setCurrentSlide(idx)}
+              aria-label={`Go to slide ${idx + 1}`}
+            />
           ))}
-
-          <div className="footer-column">
-            <h3>Contact</h3>
-            <a href={CONTACT.phoneHref}>{CONTACT.phoneDisplay}</a>
-            <a href={CONTACT.whatsappHref}>{CONTACT.whatsappDisplay}</a>
-            <a href={CONTACT.emailHref}>{CONTACT.email}</a>
-            <span>{CONTACT.address}</span>
-
-            <div className="social-links" aria-label="Social media links">
-              {SOCIAL_LINKS.map((social) => (
-                <a key={social.label} href={social.href}>
-                  {social.label}
-                </a>
-              ))}
-            </div>
-          </div>
         </div>
 
-        <div className="footer-bottom">
-          <p>Copyright {new Date().getFullYear()} Family Health Plus. All rights reserved.</p>
-          <div className="footer-legal">
-            <a href="#privacy">Privacy Policy</a>
-            <a href="#terms">Terms &amp; Conditions</a>
-            <a href="#refund">Refund Policy</a>
-          </div>
-        </div>
-      </footer>
+        <button
+          type="button"
+          className="deck-arrow-btn"
+          aria-label="Next Slide"
+          disabled={currentSlide === SLIDES.length - 1}
+          onClick={() => setCurrentSlide((curr) => Math.min(SLIDES.length - 1, curr + 1))}
+        >
+          →
+        </button>
+      </div>
 
-      <FloatingCTA />
+      <FloatingCTA navigateToSection={navigateToSection} />
 
       {isDrawerOpen && (
         <div className="modal-overlay" role="presentation" onClick={() => setIsDrawerOpen(false)}>
@@ -704,7 +757,7 @@ function App() {
               ×
             </button>
             <p className="drawer-kicker">Package details</p>
-            <h2 id="package-drawer-title">{drawerPackage.name}</h2>
+            <h2 id="package-drawer-title" style={{ fontFamily: "'Fraunces', Georgia, serif", color: '#fff', fontSize: '1.8rem', margin: '0 0 1rem' }}>{drawerPackage.name}</h2>
             <p className="drawer-summary">{drawerPackage.summary}</p>
 
             <div className="drawer-pricing">
@@ -738,7 +791,7 @@ function App() {
                 <p>{drawerPackage.prep}</p>
               </div>
               <div>
-                <h3>Who should choose this package?</h3>
+                <h3>Who should choose?</h3>
                 <p>{drawerPackage.who}</p>
               </div>
               <div>
@@ -786,7 +839,7 @@ function App() {
 
 function SectionHeading({ eyebrow, title, text, align = 'center' }) {
   return (
-    <div className={`section-heading ${align}`} data-reveal>
+    <div className={`section-heading ${align}`} data-reveal="true" className={`section-heading ${align} is-visible`}>
       <p className="eyebrow">{eyebrow}</p>
       <h2>{title}</h2>
       <p>{text}</p>
@@ -799,6 +852,7 @@ function StatPill({ metric, visible }) {
 
   useEffect(() => {
     if (!visible) {
+      setCount(0)
       return undefined
     }
 
@@ -835,6 +889,7 @@ function CounterCard({ stat, visible }) {
 
   useEffect(() => {
     if (!visible) {
+      setCount(0)
       return undefined
     }
 
@@ -868,7 +923,7 @@ function CounterCard({ stat, visible }) {
 
 function PackageCard({ pkg, onKnowMore, onBookNow }) {
   return (
-    <article className="package-card" id={`card-${pkg.slug}`} data-reveal>
+    <article className="package-card" id={`card-${pkg.slug}`} data-reveal="true" className="package-card is-visible">
       <div className="package-card-top">
         <div>
           <span className="package-badge">{pkg.badge || 'Wellness'}</span>
@@ -906,11 +961,98 @@ function PackageCard({ pkg, onKnowMore, onBookNow }) {
   )
 }
 
+// Sleek Custom SVG Rendering instead of raw emojis
+function ServiceIcon({ type }) {
+  switch (type) {
+    case 'checkup':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+      )
+    case 'lab':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M10 2v7.31M14 2v7.31M8.5 2h7M14 9.3a6.5 6.5 0 1 1-4 0M5.58 16.5h12.84" />
+        </svg>
+      )
+    case 'heart':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+        </svg>
+      )
+    case 'diabetes':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+      )
+    case 'women':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="8" r="5" />
+          <line x1="12" y1="13" x2="12" y2="22" />
+          <line x1="9" y1="18" x2="15" y2="18" />
+        </svg>
+      )
+    case 'senior':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="9" />
+          <line x1="8" y1="12" x2="16" y2="12" />
+          <line x1="12" y1="8" x2="12" y2="16" />
+        </svg>
+      )
+    case 'family':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      )
+    case 'corporate':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="2" width="20" height="20" rx="2" ry="2" />
+          <path d="M9 22V12h6v10" />
+          <path d="M8 7h2v2H8V7zM14 7h2v2h-2V7z" />
+        </svg>
+      )
+    case 'home':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10" />
+        </svg>
+      )
+    case 'doctor':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+        </svg>
+      )
+    case 'report':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
+        </svg>
+      )
+    default:
+      return null
+  }
+}
+
 function ServiceCard({ service }) {
   return (
-    <article className="service-card" data-reveal>
+    <article className="service-card" data-reveal="true" className="service-card is-visible">
       <div className="service-icon" aria-hidden="true">
-        <span>{service.icon}</span>
+        <ServiceIcon type={service.icon} />
       </div>
       <h3>{service.title}</h3>
       <p>{service.text}</p>
@@ -920,7 +1062,7 @@ function ServiceCard({ service }) {
 
 function ProcessCard({ step }) {
   return (
-    <article className="process-card" data-reveal>
+    <article className="process-card" data-reveal="true" className="process-card is-visible">
       <span className="process-step">{step.step}</span>
       <h3>{step.title}</h3>
       <p>{step.text}</p>
@@ -970,7 +1112,7 @@ function LeadForm({ id, title, subtitle, submitLabel, defaultInterest = '', comp
     }
 
     if (!formData.interest.trim()) {
-      nextErrors.interest = 'Please select a package or service.'
+      nextErrors.interest = 'Please select a package.'
     }
 
     return nextErrors
@@ -985,7 +1127,6 @@ function LeadForm({ id, title, subtitle, submitLabel, defaultInterest = '', comp
       return
     }
 
-    // TODO: Connect this payload to CRM, email, WhatsApp, or Google Sheets automation.
     setStatus({
       type: 'success',
       message: `Thanks ${formData.name.split(' ')[0] || 'there'} - we will call you back shortly.`,
@@ -1001,7 +1142,7 @@ function LeadForm({ id, title, subtitle, submitLabel, defaultInterest = '', comp
   }
 
   return (
-    <form id={id} className={`lead-form ${compact ? 'compact' : ''}`} onSubmit={handleSubmit} noValidate data-reveal>
+    <form id={id} className={`lead-form ${compact ? 'compact' : ''}`} onSubmit={handleSubmit} noValidate data-reveal="true" className={`lead-form ${compact ? 'compact' : ''} is-visible`}>
       <div className="lead-form-head">
         <div>
           <p className="eyebrow">{title}</p>
@@ -1048,19 +1189,19 @@ function LeadForm({ id, title, subtitle, submitLabel, defaultInterest = '', comp
       </div>
 
       {!compact ? (
-        <label className="field field-full">
+        <label className="field field-full" style={{ marginTop: '0.85rem' }}>
           <span>Message</span>
           <textarea
             name="message"
             value={formData.message}
             onChange={handleChange}
             placeholder="Tell us if you need home sample collection, a report review, or help choosing a package."
-            rows="4"
+            rows="3"
           />
         </label>
       ) : null}
 
-      <button type="submit" className="primary-btn full-width">
+      <button type="submit" className="primary-btn full-width" style={{ marginTop: '1.2rem' }}>
         {submitLabel}
       </button>
 
@@ -1095,7 +1236,7 @@ function Field({ label, name, value, onChange, error, placeholder, type = 'text'
   )
 }
 
-function FloatingCTA() {
+function FloatingCTA({ navigateToSection }) {
   return (
     <div className="floating-cta" aria-label="Floating booking shortcuts">
       <a href={CONTACT.phoneHref} className="floating-item phone">
@@ -1104,7 +1245,7 @@ function FloatingCTA() {
       <a href={CONTACT.whatsappHref} className="floating-item whatsapp" target="_blank" rel="noreferrer">
         <span>WhatsApp</span>
       </a>
-      <button type="button" className="floating-item book" onClick={() => document.getElementById('book-now')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+      <button type="button" className="floating-item book" onClick={() => navigateToSection('contact')}>
         <span>Book Now</span>
       </button>
     </div>
