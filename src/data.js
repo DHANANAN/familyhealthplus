@@ -50,6 +50,23 @@ export const HERO_METRICS = [
   { value: '12', suffix: '+', label: 'trust signals' },
 ];
 
+export const BRAND_STORY = {
+  eyebrow: 'From our family to yours',
+  title: 'A healthcare space that feels warm, human, and easy to trust.',
+  copy:
+    'Family Health Plus should feel like a calm guide, not a sales page. The visual language here is built around family, clarity, and a softer path into preventive care.',
+  quote:
+    'We wanted a site that feels like a helpful health companion in the room - not a corporate brochure.',
+  author: 'Family Health Plus design note',
+};
+
+export const ILLUSTRATIONS = {
+  family: '/fhplus-family.svg',
+  lab: '/fhplus-lab.svg',
+  doctor: '/fhplus-doctor.svg',
+  heart: '/fhplus-heart.svg',
+};
+
 export const PACKAGE_TABS = [
   { key: 'couple', label: 'Couple' },
   { key: 'men', label: 'Men' },

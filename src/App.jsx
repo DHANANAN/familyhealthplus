@@ -11,6 +11,8 @@ import {
   PACKAGE_GROUPS,
   PACKAGE_TABS,
   QUICK_LINKS,
+  BRAND_STORY,
+  ILLUSTRATIONS,
   SERVICE_CARDS,
   SITE_SCHEMA,
   SOCIAL_LINKS,
@@ -37,20 +39,11 @@ function App() {
 
   useEffect(() => {
     const readyTimer = window.setTimeout(() => setIsReady(true), 650)
-    const offerTimer = window.setTimeout(() => setIsOfferOpen(true), 12000)
-
-    const onScroll = () => {
-      if (window.scrollY > 900) {
-        setIsOfferOpen(true)
-      }
-    }
-
-    window.addEventListener('scroll', onScroll, { passive: true })
+    const offerTimer = window.setTimeout(() => setIsOfferOpen(false), 12000)
 
     return () => {
       window.clearTimeout(readyTimer)
       window.clearTimeout(offerTimer)
-      window.removeEventListener('scroll', onScroll)
     }
   }, [])
 
@@ -466,6 +459,50 @@ function App() {
                 <strong>Sample collection and report flow</strong>
                 <span>Clean, calm, and designed for a quick handoff</span>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="story-section section-block" id="story">
+          <div className="story-layout">
+            <div className="story-copy" data-reveal>
+              <SectionHeading
+                eyebrow={BRAND_STORY.eyebrow}
+                title={BRAND_STORY.title}
+                text={BRAND_STORY.copy}
+                align="left"
+              />
+
+              <div className="story-quote">
+                <span className="story-quote-mark">“</span>
+                <p>{BRAND_STORY.quote}</p>
+                <strong>{BRAND_STORY.author}</strong>
+              </div>
+
+              <div className="story-chips">
+                <span>Family-first tone</span>
+                <span>Soft premium visuals</span>
+                <span>Calm healthcare flow</span>
+              </div>
+            </div>
+
+            <div className="story-gallery" data-reveal>
+              <figure className="story-card large">
+                <img src={ILLUSTRATIONS.family} alt="Illustrated family wellness scene" />
+                <figcaption>Family wellness and yearly checkups</figcaption>
+              </figure>
+              <figure className="story-card">
+                <img src={ILLUSTRATIONS.lab} alt="Illustrated lab and report scene" />
+                <figcaption>Lab clarity with gentle reporting</figcaption>
+              </figure>
+              <figure className="story-card">
+                <img src={ILLUSTRATIONS.doctor} alt="Illustrated doctor consultation scene" />
+                <figcaption>Doctor guidance when users need it</figcaption>
+              </figure>
+              <figure className="story-card accent">
+                <img src={ILLUSTRATIONS.heart} alt="Illustrated heart health scene" />
+                <figcaption>Heart health with a softer visual tone</figcaption>
+              </figure>
             </div>
           </div>
         </section>
