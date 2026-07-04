@@ -2,10 +2,10 @@
 // Replace the package names, pricing, contact numbers, and testimonials with the confirmed Family Health Plus content when available.
 
 export const CONTACT = {
-  phoneDisplay: '+91 90000 00000',
-  phoneHref: 'tel:+919000000000',
-  whatsappDisplay: '+91 90000 00000',
-  whatsappHref: 'https://wa.me/919000000000?text=Hi%20Family%20Health%20Plus,%20I%20want%20to%20book%20a%20health%20checkup.',
+  phoneDisplay: '+91 80074 42424',
+  phoneHref: 'tel:+918007442424',
+  whatsappDisplay: '+91 80074 42424',
+  whatsappHref: 'https://wa.me/918007442424?text=Hi%20Family%20Health%20Plus,%20I%20want%20to%20book%20a%20health%20checkup.',
   email: 'hello@familyhealthplus.in',
   emailHref: 'mailto:hello@familyhealthplus.in',
   location: 'Hyderabad, Telangana',
