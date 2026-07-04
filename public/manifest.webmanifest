@@ -1,0 +1,16 @@
+{
+  "name": "Family Health Plus",
+  "short_name": "Family Health Plus",
+  "description": "Preventive health checkups, lab tests, home sample collection, and corporate health screening.",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#0ea5a4",
+  "background_color": "#f4fbff",
+  "icons": [
+    {
+      "src": "/fhplus-mark.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
